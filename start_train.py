@@ -3,24 +3,25 @@ import datetime
 import os
 import sys
 import coloredlogs
-from classifier import train
 import uuid
-from shutil import copyfile
+from   classifier import train
+from   shutil     import copyfile
 
-dataset = 'ped1'
-device = 'gpu1'
+dataset = 'avenue'
+device  = 'cpu'
 
 job_uuid = str(uuid.uuid4())
-job_folder = os.path.join('/share/clean/{}/jobs'.format(dataset), job_uuid)
+job_folder = os.path.join('./data/clean/{}/jobs'.format(dataset), job_uuid)
 os.makedirs(job_folder)
 copyfile('config.yml', os.path.join(job_folder, 'config.yml'))
 
 log_path = os.path.join(job_folder, 'logs')
 os.makedirs(log_path, exist_ok=True)
-logging.basicConfig(filename=os.path.join(log_path,
-                                          "train-{}.log".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))),
-                    level=logging.DEBUG,
-                    format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(filename = os.path.join(log_path,
+                                "train-{}.log".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))),
+                    level    = logging.DEBUG,
+                    format   = "%(asctime)s [%(levelname)s] %(message)s")
+
 coloredlogs.install(level=logging.INFO)
 logger = logging.getLogger()
 

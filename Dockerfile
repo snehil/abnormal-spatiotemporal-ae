@@ -1,4 +1,5 @@
 FROM nvidia/cuda:8.0-cudnn6-devel
+MAINTAINER snehil.wakchaure1@cerner.com
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
@@ -36,6 +37,7 @@ RUN conda install -y python=${python_version} && \
     pip install opencv-contrib-python && \
     conda install -y Pillow scikit-learn scikit-image graphviz pydot notebook pandas matplotlib mkl nose pyyaml six h5py && \
     pip install keras && \
+    pip install tensorflow && \
     conda clean -yt
 
 ENV PYTHONPATH='/src/:$PYTHONPATH'

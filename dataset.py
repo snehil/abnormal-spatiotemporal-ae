@@ -1,5 +1,5 @@
 
-def calc_mean(dataset, video_root_path='/share/data/videos'):
+def calc_mean(dataset, video_root_path='./data/videos'):
     import os
     from skimage.io import imread
     import numpy as np
@@ -22,7 +22,7 @@ def calc_mean(dataset, video_root_path='/share/data/videos'):
     np.save(os.path.join(video_root_path, dataset, 'mean_frame_224.npy'), frame_mean)
 
 
-def subtract_mean(dataset, video_root_path='/share/data/videos'):
+def subtract_mean(dataset, video_root_path='./data/videos'):
     import os
     from skimage.io import imread
     import numpy as np
@@ -56,7 +56,7 @@ def subtract_mean(dataset, video_root_path='/share/data/videos'):
         np.save(os.path.join(video_root_path, dataset, 'testing_frames_{}.npy'.format(frame_folder)), testing_frames_vid)
 
 
-def build_h5(dataset, train_or_test, t, video_root_path='/share/data/videos'):
+def build_h5(dataset, train_or_test, t, video_root_path='./data/videos'):
     import h5py
     from tqdm import tqdm
     import os
@@ -87,7 +87,7 @@ def build_h5(dataset, train_or_test, t, video_root_path='/share/data/videos'):
     build_volume(train_or_test, num_videos, time_length=t)
 
 
-def combine_dataset(dataset, t, video_root_path='/share/data/videos'):
+def combine_dataset(dataset, t, video_root_path='./data/videos'):
     import h5py
     import os
     from tqdm import tqdm
@@ -121,7 +121,7 @@ def combine_dataset(dataset, t, video_root_path='/share/data/videos'):
     output_file.close()
 
 
-def preprocess_data(logger, dataset, t, video_root_path='/share/data/videos'):
+def preprocess_data(logger, dataset, t, video_root_path='./data/videos'):
     import os
 
     # Step 1: Calculate the mean frame of all training frames
@@ -167,6 +167,8 @@ def preprocess_data(logger, dataset, t, video_root_path='/share/data/videos'):
             num_videos = len(os.listdir(os.path.join(video_root_path, '{}/{}_frames'.format(dataset, train_or_test))))
             for i in range(num_videos):
                 h5_file = os.path.join(video_root_path, '{0}/{1}_h5_t{2}/{0}_{3:02d}.h5'.format(dataset, train_or_test, t, i+1))
+                print('-------------------')
+                print(h5_file)
                 assert(os.path.isfile(h5_file))
         except AssertionError:
             logger.info("Step 3/4: Generating volumes for {} {} set".format(dataset, train_or_test))

@@ -1,36 +1,58 @@
-from dataset import preprocess_data
 import os
-from keras import backend as K
 import matplotlib
+from   keras      import backend as K
+from   dataset    import preprocess_data
 matplotlib.use('Agg')
 
 assert(K.image_data_format() == 'channels_last')
 
 
 def get_model(t):
-    from keras.models import Model
-    from keras.layers.convolutional import Conv2D, Conv2DTranspose
+    from keras.models                         import Model
+    from keras.layers.convolutional           import Conv2D, Conv2DTranspose
     from keras.layers.convolutional_recurrent import ConvLSTM2D
-    from keras.layers.normalization import BatchNormalization
-    from keras.layers.wrappers import TimeDistributed
-    from keras.layers.core import Activation
-    from keras.layers import Input
+    from keras.layers.normalization           import BatchNormalization
+    from keras.layers.wrappers                import TimeDistributed
+    from keras.layers.core                    import Activation
+    from keras.layers                         import Input
 
     input_tensor = Input(shape=(t, 224, 224, 1))
 
-    conv1 = TimeDistributed(Conv2D(128, kernel_size=(11, 11), padding='same', strides=(4, 4), name='conv1'),
-                            input_shape=(t, 224, 224, 1))(input_tensor)
-    conv1 = TimeDistributed(BatchNormalization())(conv1)
-    conv1 = TimeDistributed(Activation('relu'))(conv1)
+    # First Conv layer
+    conv1        = TimeDistributed(
+                        Conv2D(
+                            128, 
+                            kernel_size = (11, 11), 
+                            padding     = 'same',  # zero-padding
+                            strides     = (4, 4), 
+                            name        = 'conv1'
+                        ),
+                        input_shape=(t, 224, 224, 1)
+                    )(input_tensor)
 
-    conv2 = TimeDistributed(Conv2D(64, kernel_size=(5, 5), padding='same', strides=(2, 2), name='conv2'))(conv1)
-    conv2 = TimeDistributed(BatchNormalization())(conv2)
-    conv2 = TimeDistributed(Activation('relu'))(conv2)
+    conv1        = TimeDistributed(BatchNormalization())(conv1)
+    conv1        = TimeDistributed(Activation('relu'))(conv1)
 
+    # Second Conv layer
+    conv2        = TimeDistributed(
+                        Conv2D(
+                            64, 
+                            kernel_size = (5, 5), 
+                            padding     = 'same', # zero-padding
+                            strides     = (2, 2), 
+                            name        = 'conv2'
+                        )
+                    )(conv1)
+
+    conv2        = TimeDistributed(BatchNormalization())(conv2)
+    conv2        = TimeDistributed(Activation('relu'))(conv2)
+
+    # LSTM layers
     convlstm1 = ConvLSTM2D(64, kernel_size=(3, 3), padding='same', return_sequences=True, name='convlstm1')(conv2)
     convlstm2 = ConvLSTM2D(32, kernel_size=(3, 3), padding='same', return_sequences=True, name='convlstm2')(convlstm1)
     convlstm3 = ConvLSTM2D(64, kernel_size=(3, 3), padding='same', return_sequences=True, name='convlstm3')(convlstm2)
 
+    # De-convolution layers
     deconv1 = TimeDistributed(Conv2DTranspose(128, kernel_size=(5, 5), padding='same', strides=(2, 2), name='deconv1'))(convlstm3)
     deconv1 = TimeDistributed(BatchNormalization())(deconv1)
     deconv1 = TimeDistributed(Activation('relu'))(deconv1)
@@ -55,28 +77,28 @@ def compile_model(model, loss, optimizer):
     model.compile(loss=loss, optimizer=opt)
 
 
-def train(dataset, job_folder, logger, video_root_path='/share/data/videos'):
+def train(dataset, job_folder, logger, video_root_path='./data/videos'):
     """Build and train the model
     """
     import yaml
-    import numpy as np
-    from keras.callbacks import ModelCheckpoint, EarlyStopping
-    from custom_callback import LossHistory
-    import matplotlib.pyplot as plt
-    from keras.utils.io_utils import HDF5Matrix
+    import numpy                as     np
+    from   keras.callbacks      import ModelCheckpoint, EarlyStopping
+    from   custom_callback      import LossHistory
+    import matplotlib.pyplot    as     plt
+    from   keras.utils.io_utils import HDF5Matrix
 
     logger.debug("Loading configs from {}".format(os.path.join(job_folder, 'config.yml')))
+
     with open(os.path.join(job_folder, 'config.yml'), 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
 
-    nb_epoch = cfg['epochs']
-    batch_size = cfg['batch_size']
-    loss = cfg['cost']
-    optimizer = cfg['optimizer']
+    nb_epoch    = cfg['epochs']
+    batch_size  = cfg['batch_size']
+    loss        = cfg['cost']
+    optimizer   = cfg['optimizer']
     time_length = cfg['time_length']
-    # shuffle = cfg['shuffle']
 
-    logger.info("Building model of type {} and activation {}".format(model_type, activation))
+    # logger.info("Building model of type {} and activation {}".format(model_type, activation))
     model = get_model(time_length)
     logger.info("Compiling model with {} and {} optimizer".format(loss, optimizer))
     compile_model(model, loss, optimizer)
@@ -91,20 +113,21 @@ def train(dataset, job_folder, logger, video_root_path='/share/data/videos'):
     data = HDF5Matrix(os.path.join(video_root_path, '{0}/{0}_train_t{1}.h5'.format(dataset, time_length)),
                       'data')
 
-    snapshot = ModelCheckpoint(os.path.join(job_folder,
-               'model_snapshot_e{epoch:03d}_{val_loss:.6f}.h5'))
-    earlystop = EarlyStopping(patience=10)
+    snapshot    = ModelCheckpoint(os.path.join(job_folder,
+                    'model_snapshot_e{epoch:03d}_{val_loss:.6f}.h5'))
+    earlystop   = EarlyStopping(patience=10)
     history_log = LossHistory(job_folder=job_folder, logger=logger)
 
     logger.info("Initializing training...")
 
     history = model.fit(
-        data, data,
-        batch_size=batch_size,
-        epochs=nb_epoch,
-        validation_split=0.15,
-        shuffle='batch',
-        callbacks=[snapshot, earlystop, history_log]
+        data, # X 
+        data, # Y (Same as input for Auto-encoder)
+        batch_size       = batch_size,
+        epochs           = nb_epoch,
+        validation_split = 0.15,
+        shuffle          = 'batch',
+        callbacks        = [snapshot, earlystop, history_log]
     )
 
     logger.info("Training completed!")
@@ -130,9 +153,9 @@ def get_gt_vid(dataset, vid_idx, pred_vid):
     import numpy as np
 
     if dataset in ("indoor", "plaza", "lawn"):
-        gt_vid = np.load('/share/data/groundtruths/{0}_test_gt.npy'.format(dataset))
+        gt_vid = np.load('./data/groundtruths/{0}_test_gt.npy'.format(dataset))
     else:
-        gt_vid_raw = np.loadtxt('/share/data/groundtruths/gt_{0}_vid{1:02d}.txt'.format(dataset, vid_idx+1))
+        gt_vid_raw = np.loadtxt('./data/groundtruths/gt_{0}_vid{1:02d}.txt'.format(dataset, vid_idx+1))
         gt_vid = np.zeros_like(pred_vid)
 
         try:
@@ -198,33 +221,32 @@ def calc_auc_overall(logger, dataset, n_vid, save_path):
 
 
 def test(logger, dataset, t, job_uuid, epoch, val_loss, visualize_score=True, visualize_frame=False,
-         video_root_path='/share/data/videos'):
-    import numpy as np
-    from keras.models import load_model
+         video_root_path='./data/videos'):
     import os
     import h5py
-    from keras.utils.io_utils import HDF5Matrix
-    import matplotlib.pyplot as plt
-    from scipy.misc import imresize
+    import numpy                as     np
+    from   keras.models         import load_model
+    from   keras.utils.io_utils import HDF5Matrix
+    import matplotlib.pyplot    as     plt
+    from   scipy.misc           import imresize
 
-    n_videos = {'avenue': 21, 'enter': 6, 'exit': 4, 'ped1': 36, 'ped2': 12}
-    test_dir = os.path.join(video_root_path, '{0}/testing_h5_t{1}'.format(dataset, t))
-    job_folder = os.path.join('/share/clean/{}/jobs'.format(dataset), job_uuid)
+    n_videos       = {'avenue': 1}
+    test_dir       = os.path.join(video_root_path, '{0}/testing_h5_t{1}'.format(dataset, t))
+    job_folder     = os.path.join('./data/clean/{}/jobs'.format(dataset), job_uuid)
     model_filename = 'model_snapshot_e{:03d}_{:.6f}.h5'.format(epoch, val_loss)
     temporal_model = load_model(os.path.join(job_folder, model_filename))
-    save_path = os.path.join(job_folder, 'result')
+    save_path      = os.path.join(job_folder, 'result')
     os.makedirs(save_path, exist_ok=True)
-
 
     for videoid in range(n_videos[dataset]):
         videoname = '{0}_{1:02d}.h5'.format(dataset, videoid+1)
-        filepath = os.path.join(test_dir, videoname)
+        filepath  = os.path.join(test_dir, videoname)
         logger.info("==> {}".format(filepath))
-        f = h5py.File(filepath, 'r')
-        filesize = f['data'].shape[0]
+        f         = h5py.File(filepath, 'r')
+        filesize  = f['data'].shape[0]
         f.close()
 
-        gt_vid_raw = np.loadtxt('/share/data/groundtruths/gt_{0}_vid{1:02d}.txt'.format(dataset, videoid+1))
+        # gt_vid_raw = np.loadtxt('./data/groundtruths/gt_{0}_vid{1:02d}.txt'.format(dataset, videoid+1))
 
         logger.debug("Predicting using {}".format(os.path.join(job_folder, model_filename)))
         X_test = HDF5Matrix(filepath, 'data')
@@ -269,17 +291,17 @@ def test(logger, dataset, t, job_uuid, epoch, val_loss, visualize_score=True, vi
             plt.ylim(0, 1)
             plt.xlim(1, score_vid.shape[0]+1)
 
-            try:
-                for event in range(gt_vid_raw.shape[1]):
-                    start = int(gt_vid_raw[0, event])
-                    end = int(gt_vid_raw[1, event]) + 1
-                    gt_vid[start:end] = 1
-                    plt.fill_between(np.arange(start, end), 0, 1, facecolor='red', alpha=0.4)
-            except IndexError:
-                start = int(gt_vid_raw[0])
-                end = int(gt_vid_raw[1])
-                gt_vid[start:end] = 1
-                plt.fill_between(np.arange(start, end), 0, 1, facecolor='red', alpha=0.4)
+            # try:
+            #     for event in range(gt_vid_raw.shape[1]):
+            #         start = int(gt_vid_raw[0, event])
+            #         end = int(gt_vid_raw[1, event]) + 1
+            #         gt_vid[start:end] = 1
+            #         plt.fill_between(np.arange(start, end), 0, 1, facecolor='red', alpha=0.4)
+            # except IndexError:
+            #     start = int(gt_vid_raw[0])
+            #     end = int(gt_vid_raw[1])
+            #     gt_vid[start:end] = 1
+            #     plt.fill_between(np.arange(start, end), 0, 1, facecolor='red', alpha=0.4)
 
             plt.savefig(os.path.join(save_path, 'scores_{0}_video_{1:02d}.png'.format(dataset, videoid+1)), dpi=300)
             plt.close()
@@ -305,5 +327,5 @@ def test(logger, dataset, t, job_uuid, epoch, val_loss, visualize_score=True, vi
                 plt.clf()
 
     logger.info("{}: Calculating overall metrics".format(dataset))
-    auc_overall, eer_overall = calc_auc_overall(logger, dataset, n_videos[dataset], save_path)
+    # auc_overall, eer_overall = calc_auc_overall(logger, dataset, n_videos[dataset], save_path)
 

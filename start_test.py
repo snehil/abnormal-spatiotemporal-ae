@@ -6,19 +6,21 @@ import coloredlogs
 from classifier import test
 
 
-device = 'cpu'
-dataset = 'ped1'
-job_uuid = '86f47b9c-d0ca-49a8-beb6-84373ea9e880'
-epoch = 586
-val_loss = 0.001069
-time_length = 8
+device      = 'cpu'
+dataset     = 'avenue'
+job_uuid    = '603213fe-3308-41d7-8ce2-d734ea4a547b'
+epoch       = 2
+val_loss    = 0.001326
+time_length = 4
 
-job_folder = os.path.join('/share/clean/{}/jobs'.format(dataset), job_uuid)
-log_path = os.path.join(job_folder, 'logs')
+job_folder  = os.path.join('./data/clean/{}/jobs'.format(dataset), job_uuid)
+log_path    = os.path.join(job_folder, 'logs')
+
 os.makedirs(log_path, exist_ok=True)
-logging.basicConfig(filename=os.path.join(log_path, "test-{}.log".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))),
-                    level=logging.DEBUG,
-                    format="%(asctime)s [%(levelname)s] %(message)s")
+
+logging.basicConfig(filename = os.path.join(log_path, "test-{}.log".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))),
+                    level    = logging.DEBUG,
+                    format   = "%(asctime)s [%(levelname)s] %(message)s")
 coloredlogs.install()
 logger = logging.getLogger()
 
