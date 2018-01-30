@@ -33,6 +33,9 @@ To login to a running container:
   - ...
   - `16.avi`
 
+## Avenue dataset
+The Avenue dataset can be downloaded from here: http://www.cse.cuhk.edu.hk/leojia/projects/detectabnormal/dataset.html
+
 ## To test the model
 Once you have trained the model, you may now run `python start_test.py` after setting the parameters at the beginning of the file.
 
