@@ -8,7 +8,7 @@ from   classifier import train
 from   shutil     import copyfile
 
 dataset = 'avenue'
-device  = 'cpu'
+device  = 'gpu'
 
 job_uuid = str(uuid.uuid4())
 job_folder = os.path.join('./data/clean/{}/jobs'.format(dataset), job_uuid)
