@@ -1,8 +1,6 @@
-# Abnormal Event Detection in Videos Using Spatiotemporal Autoencoder
-This repository hosts the codes for "Abnormal Event Detection in Videos Using Spatiotemporal Autoencoder".
-Paper can be found at [Springer](https://link.springer.com/chapter/10.1007/978-3-319-59081-3_23) and [arXiv](https://arxiv.org/abs/1701.01546).
+# Anomaly detection in Smart Audio Videos using a Convolutional Spatio-temporal Auto-encoder and Convolutional Long-Short Term Memory (LSTM) Recurrent Neural Network based architecture.
 
-Prerequisites:
+## Project dependencies:
 - keras
 - tensorflow
 - h5py
@@ -12,16 +10,41 @@ Prerequisites:
 - tqdm (for progressbar)
 - coloredlogs (optional, for colored terminal logs only)
 
-You can use the `Dockerfile` provided to build the environment then enter the environment using `nvidia-docker run --rm -it -v HOST_FOLDER:/share DOCKER_IMAGE bash`.
+To build the docker image run the following docker command. This will take around 13GB space on your machine so makes sure you clean up any unused docker images and containers to avoid out of free space issues.
+```docker build -t snehil/video_anomaly_ai:v1 .```
 
-To train the model, just run `python start_train.py`. Default configuration can be found at `config.yml`. You need to prepare video dataset you plan to train/evaluate on. You may get the benchmark dataset videos from respective authors. For each dataset, put the training videos into `VIDEO_ROOT_PATH/DATASET_NAME/training_videos` and testing videos into `VIDEO_ROOT_PATH/DATASET_NAME/testing_videos`. Example structure of training videos for `avenue` dataset:
-- `VIDEO_ROOT_PATH/avenue/training_videos`
+You can then enter the environment using ```nvidia-docker run --rm -it -v HOST_FOLDER:/share DOCKER_IMAGE bash```.
+
+or run the following command:
+```docker run --rm -it -v ~/:/share snehil/<IMAGE_ID> bash```
+
+To login to a running container:
+```docker attach <CONTAINER_ID>```
+
+## To train the model 
+
+ - Just run `python start_train.py`. 
+ - Default configuration can be found at `config.yml`. 
+ - You need to prepare video dataset you plan to train/evaluate on (avi or mp4). For each dataset, put the training videos into ```   
+   ./data/videos/training_videos``` and testing videos into ```./data/videos/testing_videos```. Example structure of training videos for `avenue` dataset:
+ - `VIDEO_ROOT_PATH/avenue/training_videos`
   - `01.avi`
   - `02.avi`
   - ...
   - `16.avi`
 
+## To test the model
 Once you have trained the model, you may now run `python start_test.py` after setting the parameters at the beginning of the file.
+
+# Troubleshooting
+
+In case you get a No free space left error (inspite of having free space) while running the docker build command, try cleaning up unused docker images and containers using the following commands
+```
+docker rm $(docker ps -q -f 'status=exited')
+docker rmi $(docker images -q -f "dangling=true")
+
+```
+
 
 Please cite the following paper if you use our code / paper:
 ```
