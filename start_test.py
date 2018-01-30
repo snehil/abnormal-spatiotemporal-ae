@@ -6,7 +6,7 @@ import coloredlogs
 from classifier import test
 
 
-device      = 'cpu'
+device      = 'gpu'
 dataset     = 'avenue'
 job_uuid    = '603213fe-3308-41d7-8ce2-d734ea4a547b'
 epoch       = 2
